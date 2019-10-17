@@ -1,0 +1,92 @@
+dateext
+dateformat -%Y%m%d
+extension .log
+olddir /var/log/_history
+daily
+rotate 1000
+missingok
+sharedscripts
+
+
+/var/log/amazon-ssm-agent.log
+/var/log/atmail-ansible.log
+/var/log/atmail-api.log
+/var/log/clamd.log
+/var/log/cloud-init-output.log
+/var/log/cloud-init.log
+/var/log/cron.log
+/var/log/dhclient.log
+/var/log/dmesg.log
+/var/log/dmesg-old.log
+/var/log/ec2net.log
+/var/log/exim.log
+/var/log/freshclam.log
+/var/log/maillog.log
+/var/log/messages.log
+/var/log/redis.log
+/var/log/secure.log
+/var/log/spamd.log
+/var/log/spooler.log
+{
+    postrotate
+		/bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
+    endscript
+}
+
+/var/log/boot.log
+/var/log/clamav.log
+/var/log/atmail-ansible.log
+{
+	copytruncate
+}
+
+
+/var/log/chrony/*.log {
+    postrotate
+        /usr/bin/chronyc cyclelogs > /dev/null 2>&1 || true
+    endscript
+}
+
+/var/log/dovecot.log
+/var/log/dovecot-err.log
+{
+	postrotate
+		/bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
+		doveadm log reopen
+	endscript
+}
+
+
+
+/var/log/fail2ban.log {
+    postrotate
+      /usr/bin/fail2ban-client flushlogs >/dev/null || true
+    endscript
+}
+
+/var/log/nginx/*log {
+    create 0644 nginx nginx
+    postrotate
+        /bin/kill -USR1 `cat /run/nginx.pid 2>/dev/null` 2>/dev/null || true
+    endscript
+}
+
+/var/log/php-fpm/*log {
+    postrotate
+		/bin/kill -SIGUSR1 `cat /run/php-fpm/php-fpm.pid 2>/dev/null` 2>/dev/null || true
+    endscript
+}
+
+/var/log/yum.log {
+    create 0600 root root
+}
+
+/var/account/pacct {
+    create 0600 root root
+    postrotate
+       if /usr/bin/systemctl --quiet is-active psacct.service ; then
+           /usr/sbin/accton /var/account/pacct | /usr/bin/grep -v "Turning on process accounting, file set to '/var/account/pacct'." | /usr/bin/cat
+       fi
+    endscript
+}
+
