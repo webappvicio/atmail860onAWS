@@ -24,18 +24,18 @@ Atmail is a mailserver, webmail suite that rule and control a large set of open 
 - _webmail app_
 - _mailserver web admin interface_
 
-### Requirements
+### Requirements and 
 - AWS account: you can setup a new account to take advantage of free tiers for many services
 - 1 License from AtMail MailServer + AtMail Suite: minimum purchase for 357users + essential help costs 1450$ (4$ per user per year, 0.33$ per user per month)
 - *my_domain*: 1 domain to identify mailserver (mail.example.com, mx.example.com) : you can purchase on AWS Route 53
 - *my_admin*: 1 username for admin 
 - *my_password*: 1 strong password 
+- :large_orange_diamond: this symbol remarks patches to fix/improve compatibility of current AtMail installer or installation procedure
 
 ## 1. Launch RDS Instance
 
 Launch RDS with MariaDB engine 
-![Image of RDS Setup]
-(https://github.com/webappvicio/atmail860onAWS/blob/master/snapshot_1RDSMariaDB.png)
+![](snapshot_1RDSMariaDB.png)
 
 If you want to access to the RDS Instance directly from your computer, be sure to configure
 *Public Available: True* and restart
