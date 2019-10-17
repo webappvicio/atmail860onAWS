@@ -157,7 +157,23 @@ yum install atmail-mailserver-plugin-WebmailIntegration-8.6.0-15.el7.centos.x86_
 systemctl restart dovecot php-fpm nginx
 systemctl status dovecot php-fpm nginx
 ```
-:large_orange_diamond: AtMail documentation instructs to assign date.timezone = Australia/Brisbane in /etx/php.ini file. I guess that it should be the local timezone of the server. My mailserver serves international domains with users across multiple timezone, and I choose to don't assign any date.timezone, and relay on server timezone that is UTC.
+:large_orange_diamond:  AtMail documentation instructs to assign date.timezone = Australia/Brisbane in /etx/php.ini file. I guess that it should be the local timezone of the server. My mailserver serves international domains with users across multiple timezone, and I choose to don't assign any date.timezone, and relay on server timezone that is UTC.
+
+## 8. Configure AtMail Mailserver
+:large_orange_diamond: AtMail installation required Centos7 (that is based on RHEL Linux, as well as Amazon Linux2). With a few tweaks, it's possibile to adjust the installation procedure by Atmail to work on Amazon Linux2.
+
+```
+ln /etc/system-release /etc/redhat-release
+cp -p /var/lib/atmail/mailserver/roles/clamav/vars/RedHat_7.yml  /var/lib/atmail/mailserver/roles/clamav/vars/RedHat.yml
+cp -p /var/lib/atmail/mailserver/roles/ss1ip/templates/clamav/freshclam.sysconfig-RedHat_7.j2 /var/lib/atmail/mailserver/roles/ss1ip/templates/clamav/freshclam.sysconfig-RedHat.j2
+```
+To execute the installation, it's necessary to connect to admin web server.
+:large_orange_diamond: Moderm browser don't allow anymore to connec to self-signed certificate HTTPS web sites. For me, it was necessary to launch Google Chrome browser on MacOS with a flag to ignore the certificates. 
+
+```
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --ignore-certificate-errors &> /dev/null &
+```
+Connect to https://*my_domain*/admin, User and password: admin. Change password to strong password: **my_password*
 
 
 
