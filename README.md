@@ -381,11 +381,27 @@ openssl s_client -starttls smtp -crlf -connect 127.0.0.1:587 -servername mx.doma
 openssl s_client -starttls smtp -crlf -connect 127.0.0.1:587 -tlsextdebug
 
 ```
-## 17. Install Fail2Ban and firewalld
+## :pencil2: 17. Install Fail2Ban and firewalld
+```
+yum install fail2ban
+systemctl start fail2ban
+systemctl enable fail2ban
+systemctl start fail2ban
+systemctl enable firewalld
+firewall-cmd --zone=public --add-service=smtp --add-service=smtps --add-service=imap --add-service=imaps --add-service=pop3 --add-service=pop3s --add-service=http --add-service=https --add-service=dhcp --permanent
+firewall-cmd --zone=public --add-port=587/tcp --add-port=8443/tcp --add-port=8008/tcp  --permanent
+firewall-cmd --reload
+```
+
+```
+nano /etc/firewall/firewall.conf
+```
+Check and, if necessary, change:
+```
+LogDenied=off
 
 
-
-## 18. Re-arranging name and location of log files (still work in progress :pencil2:)
+## :pencil2: 18. Re-arranging name and location of log files (still work in progress)
 The configuration we are trying to achieve is to store all the logs file inside the directory /var/log with the name _package_.log for the ordinary log files, _package_.err with error, critical log files.
 ```
 nano /etc/rsyslog.conf
@@ -397,7 +413,7 @@ to /etc/rsyslog.d/
 ```
 systemctl restart rsyslog
 ```
-## 19. Log rotate for all log file (still work in progress :pencil2:)
+## :pencil2: 19. Log rotate for all log file (still work in progress)
 
 Copy the file
 https://github.com/webappvicio/atmail860onAWS/blob/master/atmailserver.logrotate
