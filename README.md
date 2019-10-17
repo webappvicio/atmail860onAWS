@@ -169,6 +169,7 @@ cp -p /var/lib/atmail/mailserver/roles/clamav/vars/RedHat_7.yml  /var/lib/atmail
 cp -p /var/lib/atmail/mailserver/roles/ss1ip/templates/clamav/freshclam.sysconfig-RedHat_7.j2 /var/lib/atmail/mailserver/roles/ss1ip/templates/clamav/freshclam.sysconfig-RedHat.j2
 ```
 To execute the installation, it's necessary to connect to admin web server.
+
 :large_orange_diamond: Moderm browser don't allow anymore to connec to self-signed certificate HTTPS web sites. For me, it was necessary to launch Google Chrome browser on MacOS with a flag to ignore the certificates. 
 
 ```
@@ -220,20 +221,20 @@ For each mail domain that the mailserver will handle, we need to identify a mail
 For each mail server we need to configure the following records in the DNS server (Route53)
 
 ```
-mx.domain.com.					            A		_my_ip_
-domain.com.						              MX1		0	mx.domain.com
-domain.com.						              TXT		v=spf1 mx -all
-_dmarc.domain.com.				         TXT		v=DMARC1; p=quarantine; rua=mailto:postmaster@domain.com; ruf=mailto:postmaster@domain.com; rf=afrf; pct=100
-_autodiscover._tcp.domain.com.	SRV		0 5 443 mx.domain.com
-_caldavs._tcp.domain.com.		    SRV		0 1 8443 mx.domain.com
-_caldavs._tcp.domain.com.		    TXT		"path=/addressbooks"
-_carddavs._tcp.domain.com.		   SRV		0 1 8443 mx.domain.com
-_carddavs._tcp.domain.com.		   TXT		"path=/calendars"
-_imap._tcp.domain.com.			      SRV		0 1 143 mx.domain.com
-_imaps._tcp.domain.com.			     SRV		0 1 993 mx.domain.com
-_pop3._tcp.domain.com.			      SRV		0 1 110 mx.domain.com
-_submission._tcp.domain.com.	 SRV		0 1 587 mx.domain.com
-_pop3s._tcp.domain.com.			    SRV		0 1 995 mx.domain.com
+mx.domain.com.					        A		_my_ip_
+domain.com.						MX             1		0	mx.domain.com
+domain.com.						TXT		v=spf1 mx -all
+_dmarc.domain.com.				        TXT		v=DMARC1; p=quarantine; rua=mailto:postmaster@domain.com; ruf=mailto:postmaster@domain.com; rf=afrf; pct=100
+_autodiscover._tcp.domain.com.	                        SRV		0 5 443 mx.domain.com
+_caldavs._tcp.domain.com.		                SRV		0 1 8443 mx.domain.com
+_caldavs._tcp.domain.com.		                TXT		"path=/addressbooks"
+_carddavs._tcp.domain.com.		                SRV		0 1 8443 mx.domain.com
+_carddavs._tcp.domain.com.		                TXT		"path=/calendars"
+_imap._tcp.domain.com.			                SRV		0 1 143 mx.domain.com
+_imaps._tcp.domain.com.			                SRV		0 1 993 mx.domain.com
+_pop3._tcp.domain.com.			                SRV		0 1 110 mx.domain.com
+_submission._tcp.domain.com.	                        SRV		0 1 587 mx.domain.com
+_pop3s._tcp.domain.com.			                SRV		0 1 995 mx.domain.com
 ```
 Install let's encrypt certbot and generate certificate for all the mailserver names.
 ```
@@ -278,7 +279,7 @@ https://mx.domain2.com
 https://mx.domain2.com
 
 ## 12. Configure primary domain for SSL POP3/IMAP (exim)
-:large_orange_diamond: it seems that reference to RDS mariadbis lost in the configuration script. I fix the issue 
+:large_orange_diamond: It seems that reference to RDS mariadb is lost in the configuration script. I fixed the issue in this way:
 ```
 nano /var/lib/atmail/mailserver/group_vars/all/install
 ```
@@ -295,7 +296,7 @@ SSL key path			       = /etc/letsencrypt/live/my_server/privkey.pem
 
 Press "Publish Config"
 
-:pushpin: This step shold be merged with the step "Multiple Certificates for SSL POP3/IMAP (exim)"
+:pushpin: This step should be merged with the step "Multiple Certificates for SSL POP3/IMAP (exim)"
 
 ## 13. Configure primary domain for DKIM Signature (exim)
 ```
@@ -470,7 +471,7 @@ chmod +x imapsync
 ./imapsync
 ```
 
-## A. Usefulel command
+## A. Usefull command
 
 Control Atmail packages:
 ```
