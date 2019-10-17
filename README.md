@@ -89,11 +89,30 @@ Take note of the IP address: *my_ip*
 Using root access to the server allow a more easy installation procedure (no sudo, or special permission around) and in my opinion a more easy maintenance. It's required a private/public key on the admin computer *id_rsa.pub*: google how to create ssh keys on your os.
 
 ```
-ssh -i "/volume/.. ../key_server.pem" ec2-user@*my_ip*
+ssh -i "/volume/.. ../key_server.pem" ec2-user@my_ip
 sudo nano /root/.ssh/authorized_keys
 ```
+paste inside the authorized_keys file the content of the id_rsa.pub file.
 
+```
+sudo nano /etc/ssh/sshd_config
+```
+Uncomment and change the following lines to grant root access via ssh and have a stable ssl connection:
 
+```
+    PermitRootLogin yes
+    ClientAliveInterval 60
+    TCPKeepAlive yes
+    ClientAliveCountMax 10000
+```
+```
+sudo systemctl reload sshd
+```
+Test the connection from your computer: 
+
+```
+ssh -l root my_ip
+```
 
 
 
