@@ -62,6 +62,8 @@ It's preferred to have 1 root volume with the operating system and the software 
 
 ![](snapshot_2AtMailSecurityGroup.png)
 
+Be sure to save the Key server pem certificate: *key_server.pem*
+
 ## 3. Associate Elastic IP, request Reverse PTR
 
 Alocate a new Elastic IP address and associate with EC2 Instance. Verify that the IP is a 'clean' IP, and it's not already in a blacklist.
@@ -81,6 +83,15 @@ Take note of the IP address: *my_ip*
  Create a new role _my_role_, attach policies to send logs and metrics to CloudWatch, and enable AWS SSM. Assign the role _my_role_ to RDS and EC2 instance.
  
  ![](snapshot_3Role.png)
+
+## 5. Enable passwordless root access
+
+Using root access to the server allow a more easy installation procedure (no sudo, or special permission around) and in my opinion a more easy maintenance. It's required a private/public key on the admin computer *id_rsa.pub*: google how to create ssh keys on your os.
+
+```
+ssh -i "/volume/.. ../key_server.pem" ec2-user@*my_ip*
+sudo nano /root/.ssh/authorized_keys
+```
 
 
 
