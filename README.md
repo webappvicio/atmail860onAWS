@@ -57,13 +57,10 @@ It's preferred to have 1 root volume with the operating system and the software 
 
 :pushpin: Evaluate to have 1 encrypted EBS for each domain configured in the mail server: dovecot/Mail_location. 
 
-Edit the _default_ security groups:
-- _admin_ security group with all traffic open only for administration IP (your IP)
-- _atmail_ security group with open ports for all traffic: smtp(25), smtp submission(587), smtps(465), imap(143), imaps(993), pop3(110), pop3s(995), http(80), https(443), dav(8008), davs(8443)
+- Edit the _default_ security group to allow all traffic open only for administration IP (your IP) and assign to RDS and EC2 instances.
+- Create a new _atmail_ security group and assign to EC2 and open the following port: smtp(25), smtp submission(587), smtps(465), imap(143), imaps(993), pop3(110), pop3s(995), http(80), https(443), dav(8008), davs(8443)
 
 ![](snapshot_2AtMailSecurityGroup.png)
-
-Crea
 
 ## 3. Associate Elastic IP, request Reverse PTR
 
@@ -77,9 +74,11 @@ If the IP is in a blacklist, release the IP and request a new one.
 
 It's important to configure the reverse DNS as identity proof for the mail server, and it's necessary to request to AWS. Usually AWS processes the request in a few hours: https://aws.amazon.com/forms/ec2-email-limit-rdns-request
 
+Take note of the IP address: *my_ip*
+
 ## 4. CloudWatch and SSM Manager role
 
- Create a new role _my_role_, attach policies to send logs and metris to CloudWatch, and enable AWS SSM. Assign the role _my_role_ to RDS and EC2 instance.
+ Create a new role _my_role_, attach policies to send logs and metrics to CloudWatch, and enable AWS SSM. Assign the role _my_role_ to RDS and EC2 instance.
  
  ![](snapshot_3Role.png)
 
