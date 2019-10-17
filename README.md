@@ -13,7 +13,7 @@ The configuration aims to handle multiple domains with indipendent SSL certifcia
 - _redis_: nosql based for user session management (to be replaced by AWS ElasticCache)
 - _ansible_: configuration management and package depolyment tool
 - _logstash_: logs processing and transformation (not installed, replaced by CloudWatch Agent)
-- _elastic search_: search and analytics engine for events reporting and statistics (not installed, replaced by CloudWatch Inisghts)
+- _elastic search_: search and analytics engine for events reporting and statistics (not installed, replaced by CloudWatch Insights)
 - _mariadb_: open source fork of MySQL relational databases (not installed, replaced by AWS RDS)
 
 #### Open Source add-on packages
@@ -399,6 +399,13 @@ nano /etc/firewall/firewall.conf
 Check and, if necessary, change:
 ```
 LogDenied=off
+```
+
+Test status of fail2ban-exim
+```
+fail2ban-client status exim
+```
+
 
 
 ## :pencil2: 18. Re-arranging name and location of log files (still work in progress)
@@ -419,6 +426,38 @@ Copy the file
 https://github.com/webappvicio/atmail860onAWS/blob/master/atmailserver.logrotate
 to /etc/logrotate.d/
 
+## :pencil2: 18. Configure CloudWatch Agent to send metrics and logs from the server to CloudWatch
+```
+wget https://s3.amazonaws.com/amazoncloudwatch-agent/linux/amd64/latest/AmazonCloudWatchAgent.zip
+unzip AmazonCloudWatchAgent.zip -d amazon-cloudwatch-agent
+cd amazon-cloudwatch-agent/
+./install.sh
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:AmazonCloudWatch-linux -s
+
+cp /etc/amazon/ssm/seelog.xml.template /etc/amazon/ssm/seelog.xml
+nano /etc/amazon/ssm/seelog.xml
+```
+
+```
+<seelog type="adaptive" mininterval="2000000" maxinterval="100000000" critmsgcount="500" minlevel="info">
+    <exceptions>
+        <exception filepattern="test*" minlevel="error"/>
+    </exceptions>
+    <outputs formatid="fmtinfo">
+        <rollingfile type="size" filename="/var/log/amazon-ssm-agent.log" maxsize="30000000" maxrolls="5"/>
+        <filter levels="error,critical" formatid="fmterror">
+            <rollingfile type="size" filename="/var/log/amazon-ssm-errors.log" maxsize="10000000" maxrolls="5"/>
+        </filter>
+    </outputs>
+    <formats>
+	<format id="fmterror" format="%Date %Time %LEVEL [%FuncShort @ %File.%Line] %Msg%n"/>
+        <format id="fmtdebug" format="%Date %Time %LEVEL [%FuncShort @ %File.%Line] %Msg%n"/>
+        <format id="fmtinfo" format="%Date %Time %LEVEL %Msg%n"/>
+    </formats>
+</seelog>
+```
+
+
 
 
 ## 20. Install imapsync on EC2
@@ -429,8 +468,31 @@ cd /_install
 wget -N https://imapsync.lamiral.info/imapsync
 chmod +x imapsync
 ./imapsync
-
 ```
+
+## A. Usefulel command
+
+Control Atmail packages:
+```
+systemctl status dovecot nginx exim php-fpm nginx apiserver spamassassin clamd@scan fail2ban firewalld
+systemctl restart dovecot nginx exim php-fpm nginx apiserver spamassassin clamd@scan fail2ban firewalld
+systemctl stop    dovecot nginx exim php-fpm nginx apiserver spamassassin clamd@scan fail2ban firewalld
+systemctl start   dovecot nginx exim php-fpm nginx apiserver spamassassin clamd@scan fail2ban firewalld
+systemctl is-active dovecot nginx exim php-fpm nginx apiserver spamassassin clamd@scan fail2ban firewalld
+```
+Control AWS packages:
+```
+systemctl status amazon-cloudwatch-agent.service  amazon-ssm-agent.service
+systemctl start amazon-cloudwatch-agent.service  amazon-ssm-agent.service
+systemctl restart amazon-cloudwatch-agent.service  amazon-ssm-agent.service
+systemctl stop amazon-cloudwatch-agent.service  amazon-ssm-agent.service
+systemctl is-active amazon-cloudwatch-agent.service  amazon-ssm-agent.service
+```
+Ansible Publish Config 
+```
+sudo -u atmail ansible-playbook /var/lib/atmail/mailserver/mailserver.yml --vault-password-file /etc/atmail/mailserver/.vault -vvvv
+```
+
 
 
 
