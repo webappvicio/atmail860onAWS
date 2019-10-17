@@ -47,9 +47,9 @@ After RDS is launched please take notes of the IP address. This procedure will r
 
 ## 2. Launch EC2 and security group
 
-Launch EC2 Instance Amazon Linux 2 AMI (HVM), SSD Volume Type - 64-bit (x86). This kind of instance is the most optiimized, efficient, supported type of instance in the AWS uniserver and it's very easy to adap the AtMail install to work on Amazon Linux 2. 
+Launch EC2 Instance Amazon Linux 2 AMI (HVM), SSD Volume Type - 64-bit (x86). This kind of instance is the most optiimized, efficient, supported type of instance in the AWS universe and it's very easy to adap the AtMail install to work on Amazon Linux 2. 
 
-We reccomend to select *t3.medium* instance to comply with the AtMail minimum requirement of 4GB of memory avialable.
+We reccomend to select *t3.medium* instance to comply with the AtMail minimum requirement of 4GB of memory avialable. It's importante that the RDS and the EC2 instances are in the same region/zone.
 
 :dollar: t3.medium EC2 as reserved instance (no-upfront) as a cost of 25$ per month (300$ per year, 0.85% per year per user on the 357 users license).
 
@@ -57,9 +57,13 @@ It's preferred to have 1 root volume with the operating system and the software 
 
 :pushpin: Evaluate to have 1 encrypted EBS for each domain configured in the mail server: dovecot/Mail_location. 
 
-Create 2 security groups:
+Edit the _default_ security groups:
 - _admin_ security group with all traffic open only for administration IP (your IP)
 - _atmail_ security group with open ports for all traffic: smtp(25), smtp submission(587), smtps(465), imap(143), imaps(993), pop3(110), pop3s(995), http(80), https(443), dav(8008), davs(8443)
+
+![](snapshot_2AtMailSecurityGroup.png)
+
+Crea
 
 ## 3. Associate Elastic IP, request Reverse PTR
 
@@ -72,6 +76,12 @@ If the IP is in a blacklist, release the IP and request a new one.
 :rescue_worker_helmet: Reallocating a new IP is a fast recover procedure if accidentally the mailserver is caught in a blacklist.
 
 It's important to configure the reverse DNS as identity proof for the mail server, and it's necessary to request to AWS. Usually AWS processes the request in a few hours: https://aws.amazon.com/forms/ec2-email-limit-rdns-request
+
+## 4. CloudWatch and SSM Manager role
+
+ Create a new role _my_role_, attach policies to send logs and metris to CloudWatch, and enable AWS SSM. Assign the role _my_role_ to RDS and EC2 instance.
+ 
+ ![](snapshot_3Role.png)
 
 
 
