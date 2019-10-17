@@ -1,0 +1,38 @@
+	keepalive_timeout 10;
+
+	root /usr/share/atmail/dav/html/;
+	index server.php;
+
+	rewrite ^/.well-known/caldav /calendars redirect;
+	rewrite ^/.well-known/carddav /addressbooks redirect;
+
+	location / {
+		try_files $uri $uri/ /server.php?$args;
+	}
+
+	client_max_body_size 100M;
+
+	ssl_session_tickets off;
+	ssl_ecdh_curve secp384r1;
+	ssl_stapling on;
+	ssl_stapling_verify on;
+	add_header X-Content-Type-Options nosniff;
+
+	location ~ ^(.+.php)(.*)$ {
+			if ($request_method = OPTIONS) {
+					add_header Allow "OPTIONS, GET, HEAD, DELETE, PROPFIND, PUT, PROPPATCH, COPY, MOVE, REPORT, MKCOL, LOCK, UNLOCK";
+					add_header DAV "1, 3, extended-mkcol, access-control, calendarserver-principal-property-search, 2, calendar-access, calendar-proxy, calendar-auto-schedule, calendar-availability, calendarserver-subscribed, addressbook";
+					add_header MS-Author-Via DAV;
+					add_header Accept-Ranges bytes;
+					return 200;
+			}
+			try_files $uri =404;
+			fastcgi_split_path_info ^(.+\.php)(/.+)$;
+			fastcgi_pass unix:/var/run/php-fpm/php-fpm.sock;
+			fastcgi_index index.php;
+			include fastcgi_params;
+			fastcgi_param   SCRIPT_FILENAME $document_root$fastcgi_script_name;
+			fastcgi_param HTTP_AUTHORIZATION $http_authorization;
+			fastcgi_hide_header X-Powered-By;
+	}
+

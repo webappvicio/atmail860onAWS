@@ -1,0 +1,91 @@
+
+	gzip on;
+	gzip_types text/plain application/xml application/json application/javascript text/css;
+
+
+	location ~ /.well-known/ms/(.*) {
+		return 307 https://$host/admin/index.php/api/$1;
+	}
+
+	location /robots.txt {
+		add_header Content-Type text/plain;
+		return 200 "User-agent: *\nDisallow: /\n";
+	}
+
+	location /admin {
+		alias /usr/share/atmail/mailserver/webui;
+
+		index index.php;
+
+		location ~ [^/]\.php(/|$) {
+
+			fastcgi_split_path_info ^(.+?\.php)(/.*)$;
+
+			fastcgi_read_timeout 1800;
+			fastcgi_pass unix:/var/run/php-fpm/php-fpm.sock;
+			fastcgi_index index.php;
+			include fastcgi_params;
+
+			fastcgi_param   SCRIPT_FILENAME $request_filename;
+			fastcgi_param   PATH_INFO               $fastcgi_path_info;
+		}
+	}
+
+
+     location /static {
+		proxy_set_header        Host $host;
+		proxy_set_header        X-Real-IP $remote_addr;
+		proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header        X-Forwarded-Proto $scheme;
+		proxy_set_header        X-Forwarded-Referer $http_referer;
+
+		proxy_pass              http://127.0.0.1:3000/s;
+		proxy_read_timeout      90;
+		proxy_redirect          default;
+	}
+
+	location / {
+		alias /usr/share/atmail/webmail/public/;
+		try_files $uri /index.html;
+		
+		add_header x-xss-protection "1; mode=block" always;
+		add_header X-Content-Type-Options "nosniff" always;
+		add_header x-frame-options "SAMEORIGIN" always;
+		add_header Content-Security-Policy "script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self'";
+		add_header Strict-Transport-Security "max-age=31536000; includeSubdomains; preload";
+		add_header Referrer-Policy strict-origin-when-cross-origin;
+	}
+
+
+
+
+	location /api/ {
+		proxy_set_header        Host $host;
+		proxy_set_header        X-Real-IP $remote_addr;
+		proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header        X-Forwarded-Proto $scheme;
+		proxy_set_header        X-Forwarded-Referer $http_referer;
+
+		proxy_pass              http://127.0.0.1:3000/;
+		proxy_read_timeout      90;
+		proxy_redirect          default;
+	}
+
+	location /event {
+
+		proxy_set_header        Host $host;
+		proxy_set_header        X-Real-IP $remote_addr;
+		proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header        X-Forwarded-Proto $scheme;
+
+		proxy_pass              http://127.0.0.1:3001;
+		proxy_read_timeout      1800;
+		proxy_set_header Connection "";
+		proxy_http_version 1.1;
+		chunked_transfer_encoding off;
+		proxy_buffering off;
+		proxy_cache off;
+	}
+
+
+
