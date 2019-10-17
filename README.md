@@ -29,7 +29,6 @@ The configuration aims to handle multiple domains with indipendent SSL certifcia
 - AWS account: you can setup a new account to take advantage of free tiers for many services
 - *AtMailID, License*: 1 License from AtMail MailServer + AtMail Suite: minimum purchase for 357users + essential help costs 1450$ (4$ per user per year, 0.33$ per user per month)
 - *my_domain*: 1 domain to identify mailserver (mail.example.com, mx.example.com) : you can purchase on AWS Route 53
-- *my_admin*: 1 username for admin 
 - *my_password*: 1 strong password that we will use for all packages and installation
 - :large_orange_diamond: this symbol remarks patches to fix/improve compatibility of current AtMail installer or installation procedure
 
@@ -114,6 +113,51 @@ Test the connection from your computer:
 ssh -l root my_ip
 ```
 
+## 6. Set hostname and install required packages and remove unwanted packages
+
+```
+hostnamectl set-hostname my_ip
+
+systemctl stop postfix
+systemctl disable postfix
+yum remove postfix -y
+
+amazon-linux-extras install epel
+yum update -y
+yum install nano wget deltarpm ntp dpkg gcc
+```
+
+## 7. Install AtMail Mailserver
+
+```
+cd /_install
+wget https://atmail.com/portal2/app/download/product/msvr -O /_install/atmail-mailserver-rpm.tar.gz
+tar xvzf atmail-mailserver-rpm.tar.gz
+wget https://atmail.com/portal2/app/download/product/app -O atmail-suite-rpm.tar.gz
+tar xvzf atmail-suite-rpm.tar.gz
+cd /_install/atmail-mailserver-8.6.0/
+yum install atmail-common-1.0.0-1.el7.centos.x86_64.rpm -y 
+yum install dovecot-2.2.19-1.atmail.el7.centos.x86_64.rpm -y 
+yum install dovecot-pigeonhole-2.2.19-1.atmail.el7.centos.x86_64.rpm -y 
+yum install dovecot-mysql-2.2.19-1.atmail.el7.centos.x86_64.rpm -y 
+yum install atmail-mailserver-ansible-8.6.0-19.el7.centos.x86_64.rpm -y 
+yum install atmail-mailserver-8.6.0-19.el7.centos.x86_64.rpm -y 
+yum update -y
+/usr/bin/atmail-mailserver-install
+```
+Press enter for most of the requested paramaters, excpet the following:
+```
+Enter DB host [ localhost ] : my_rds
+Enter DB Username with GRANT/CREATE ACCESS [ root ] : admin
+Enter DB Username Password [  ] : my_password
+```
+
+```
+yum install atmail-mailserver-plugin-WebmailIntegration-8.6.0-15.el7.centos.x86_64.rpm -y 
+systemctl restart dovecot php-fpm nginx
+systemctl status dovecot php-fpm nginx
+```
+:large_orange_diamond: AtMail documentation instructs to assign date.timezone = Australia/Brisbane in /etx/php.ini file. I guess that it should be the local timezone of the server. My mailserver serves international domains with users across multiple timezone, and I choose to don't assign any date.timezone, and relay on server timezone that is UTC.
 
 
 
