@@ -25,10 +25,10 @@ The configuration aims to handle multiple domains with indipendent SSL certifcia
 - _webmail app_
 - _mailserver web admin interface_
 
-### Requirements and 
+### Requirements and documentation notation
 - AWS account: you can setup a new account to take advantage of free tiers for many services
 - *AtMailID, License*: 1 License from AtMail MailServer + AtMail Suite: minimum purchase for 357users + essential help costs 1450$ (4$ per user per year, 0.33$ per user per month)
-- *my_domain*: 1 domain to identify mailserver (mail.example.com, mx.example.com) : you can purchase on AWS Route 53
+- *my_server*: 1 domain to identify mailserver (mail.example.com, mx.example.com) : you can purchase on AWS Route 53.
 - *my_password*: 1 strong password that we will use for all packages and installation
 - :large_orange_diamond: this symbol remarks patches to fix/improve compatibility of current AtMail installer or installation procedure
 
@@ -130,6 +130,7 @@ yum install nano wget deltarpm ntp dpkg gcc
 ## 7. Install AtMail Mailserver
 
 ```
+mkdir /_install
 cd /_install
 wget https://atmail.com/portal2/app/download/product/msvr -O /_install/atmail-mailserver-rpm.tar.gz
 tar xvzf atmail-mailserver-rpm.tar.gz
@@ -173,7 +174,254 @@ To execute the installation, it's necessary to connect to admin web server.
 ```
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --ignore-certificate-errors &> /dev/null &
 ```
-Connect to https://*my_domain*/admin, User and password: admin. Change password to strong password: **my_password*
+Connect to https://*my_server*/admin, User and password: admin. Change password to strong password: *my_password*.
+
+To complete the installation, go to Services tab and press Publish Config button.
+
+## 9. Install AtMail Suite: api server, web mail, dav server
+
+```
+cd /_install/atmail-suite-8.6.0/
+yum install atmail-common-1.0.0-1.el7.centos.x86_64.rpm  -y 
+yum install atmail-api-8.6.0-26.el7.centos.x86_64.rpm -y 
+/usr/bin/atmail-api-install
+source /etc/profile.d/atmail-apiadmin.sh
+apiadmin user add admin my_password  --role=admin
+systemctl restart apiserver
+systemctl status apiserver
+```
+:large_orange_diamond: when stopped, atmail-api server returns the following errors, that should be reported, investigated:
+```
+apiserver.service: main process exited, code=exited, status=2/INVALIDARGUMENT
+Unit apiserver.service entered failed state.
+apiserver.service failed.
+```
+
+cd /_install/atmail-suite-8.6.0/
+yum install atmail-webmail-8.6.0-21.el7.centos.x86_64.rpm -y -q
+/usr/bin/atmail-webmail-configure
+yum install atmail-dav-8.6.0-15.el7.centos.x86_64.rpm -y -q
+/usr/bin/atmail-dav-install
+
+:large_orange_diamond: in my first installation, the Publish Config stopped to work because of missconfiguration of linux user *atmail*. I reccomed to check time to time the home directory for the atmail user:
+```
+cat /etc/password
+...
+atmail:x:1001:992::/var/lib/atmail/mailserver:/bin/bash
+...
+```
+If it shows a different value from /var/lib/atmail/mailserver, please re-assign using
+```
+usermod -d /var/lib/atmail/mailserver atmail
+```
+
+## 10. Let's Encrypt free SSL certificates for dovecot, exim, nginx
+For each mail domain that the mailserver will handle, we need to identify a mailserver name (mail.domain1.com, mail.domain2.com, etc..).
+For each mail server we need to configure the following records in the DNS server (Route53)
+
+```
+mx.domain.com.					            A		_my_ip_
+domain.com.						              MX1		0	mx.domain.com
+domain.com.						              TXT		v=spf1 mx -all
+_dmarc.domain.com.				         TXT		v=DMARC1; p=quarantine; rua=mailto:postmaster@domain.com; ruf=mailto:postmaster@domain.com; rf=afrf; pct=100
+_autodiscover._tcp.domain.com.	SRV		0 5 443 mx.domain.com
+_caldavs._tcp.domain.com.		    SRV		0 1 8443 mx.domain.com
+_caldavs._tcp.domain.com.		    TXT		"path=/addressbooks"
+_carddavs._tcp.domain.com.		   SRV		0 1 8443 mx.domain.com
+_carddavs._tcp.domain.com.		   TXT		"path=/calendars"
+_imap._tcp.domain.com.			      SRV		0 1 143 mx.domain.com
+_imaps._tcp.domain.com.			     SRV		0 1 993 mx.domain.com
+_pop3._tcp.domain.com.			      SRV		0 1 110 mx.domain.com
+_submission._tcp.domain.com.	 SRV		0 1 587 mx.domain.com
+_pop3s._tcp.domain.com.			    SRV		0 1 995 mx.domain.com
+```
+Install let's encrypt certbot and generate certificate for all the mailserver names.
+```
+yum-config-manager --enable rhui-eu-central-1-rhel-server-extras rhui-eu-central-1-rhel-server-optional
+yum install certbot python2-certbot-nginx
+certbot ----standalone --certonly
+```
+To allow access to the certificates, add accessing users to _atmail_ group and grant access to the certificates folder
+
+```
+usermod -a -G atmail dovecot
+usermod -a -G atmail exim
+usermod -a -G atmail nginx
+chown -R atmail:atmail /etc/letsencrypt/archive
+chown -R atmail:atmail /etc/letsencrypt/live
+chmod -R ug+rw,o= /etc/letsencrypt/archive
+chmod -R ug+rw,o= /etc/letsencrypt/live
+
+```
+
+## 11. Configure SSL certificates for nginx
+Re-arrange the nginx conf files to have a flexible structure ready to work with multiple domains:
+```
+rm /etc/nginx/conf.d/atmail-dav.conf
+rm /etc/nginx/conf.d/atmail.conf
+```
+Copy in the directory /etc/nginx/conf.d/ the following 'generic' files that will work with all the :
+- https://github.com/webappvicio/atmail860onAWS/blob/master/atmail.include
+- https://github.com/webappvicio/atmail860onAWS/blob/master/atmail-dav.include
+
+Duplicate the following file for each mail server, replace name of your mail server (mx.domain.com and reverted com.domain.mx), rename the file, and copy to /etc/nginx/conf.d/:
+- https://github.com/webappvicio/atmail860onAWS/blob/master/com.domain.mx.conf
+
+Verifi configuration and restart:
+```
+nginx -t
+systemctl restart nginx
+```
+Test if you have SSL active for each domain, connecting with your browser to each mail server URL:
+https://mx.domain.com
+https://mx.domain2.com
+https://mx.domain2.com
+
+## 12. Configure primary domain for SSL POP3/IMAP (exim)
+:large_orange_diamond: it seems that reference to RDS mariadbis lost in the configuration script. I fix the issue 
+```
+nano /var/lib/atmail/mailserver/group_vars/all/install
+```
+Edit as following, replace my_rds with RDS instance URL: 
+```
+dovecot_db_host: my_rds
+exim_db_host:  my_rds
+```
+Connect to https://my_server/admin, tab=Services, left menu=SMTP:
+
+Check the SSL POP3/IMAP checkbox 
+SSL certificate path 	= /etc/letsencrypt/live/my_server/fullchain.pem
+SSL key path			       = /etc/letsencrypt/live/my_server/privkey.pem
+
+Press "Publish Config"
+
+:pushpin: This step shold be merged with the step "Multiple Certificates for SSL POP3/IMAP (exim)"
+
+## 13. Configure primary domain for DKIM Signature (exim)
+```
+chown -R root:exim /etc/exim/dkim
+chmod -R u=rw,g=r,o=r /etc/exim/dkim
+nano  /var/lib/atmail/mailserver/roles/ss1ip/templates/exim/exim.conf.j2
+```
+Replace: 
+```
+DKIM_FILE = {{ exim_dkim_key_dir }}/{DKIM_DOMAIN}.dkim
+```
+with
+```
+DKIM_FILE = {{ exim_dkim_key_dir }}/${lc:${domain:$h_from:}}.dkim
+```
+Connect to https://my_server/admin, tab=Services, left menu=SMTP:
+
+Activate DKIM from the admin interface
+Generate DKIM
+
+Update Route53 Records with DKIM signature
+
+## 14. Some Patches to procedure
+:pushpin: I'm not sure the following issue could be repeated or just a consequence of some attempts I did during the installation procedure.
+- check the on the RDS mariadb instance users: exim.% and dovecot.% can access to database.* at least with SELECT permission
+- check ownership/permission of /var/lib/atmail/dovecot/sieve directory to be root/atmail rwxrw-r--. Fix with:
+```
+chmod -R u=rwx,g=rw,o=r /var/lib/atmail/dovecot/sieve
+chgrp -R atmail /var/lib/atmail/dovecot/sieve
+```
+## 15. Multiple domains with matching SSL certificates for IMAP SSL (dovecot)
+```
+nano /var/lib/atmail/mailserver/roles/ss1ip/templates/dovecot/dovecot.conf.j2
+```
+For each mailserver domain add a section: 
+```
+...
+local_name mx.domain.com {
+  ssl_cert = </etc/letsencrypt/live/mx.domain.com/fullchain.pem
+  ssl_key = </etc/letsencrypt/live/mx.domain.com/privkey.pem
+}
+local_name mx.domain2.com {
+  ssl_cert = </etc/letsencrypt/live/mx.domain2.com/fullchain.pem
+  ssl_key = </etc/letsencrypt/live/mx.domain2.com/privkey.pem
+}
+...
+```
+Connect to: https://my_server/admin. Press "Publish Config".
+Test
+```
+cat /etc/dovecot/dovecot.conf| grep ssl
+openssl s_client -starttls imap -crlf -connect 127.0.0.1:143 -servername mx.domain.com -tlsextdebug
+openssl s_client -starttls imap -crlf -connect 127.0.0.1:143 -servername mx2.domain.com -tlsextdebug
+openssl s_client -starttls imap -crlf -connect 127.0.0.1:143 -tlsextdebug
+```
+
+## 16. Multiple domains with matching SSL certificates for SMTP SSL (exim)
+Change the current values in the database: mailserver, table: Inventory
+configSection = exim, configVariable = ssl_base_dir: change from /etc/pki/exim > /etc/letsencrypt/live
+configSection = exim, configVariable = sni_enable: change from 0 > 1
+```
+nano  /var/lib/atmail/mailserver/roles/ss1ip/templates/exim/exim.conf.j2
+```
+Change from:
+```
+tls_privatekey = {% raw %}${if exists{{% endraw %}{{ exim_sni_key_dir }}{% raw %}/${tls_sni}.key}{{% endraw %}{{ exim_sni_key_dir }}{% raw %}/${tls_sni}/privkey.pem}{{% endraw %}{{ exim_ssl_key_dir }}/{{ exim_tls_privatekey }}{% raw %}}}{% endraw %}
+tls_certificate = {% raw %}${if exists{{% endraw %}{{ exim_sni_cert_dir }}{% raw %}/${tls_sni}.crt}{{% endraw %}{{ exim_sni_cert_dir }}{% raw %}/${tls_sni}fullchain.pem}{{% endraw %}{{ exim_ssl_cert_dir }}/{{ exim_tls_certificate }}{% raw %}}}{% endraw %}
+```
+to
+```
+tls_privatekey = {% raw %}${if exists{{% endraw %}{{ exim_ssl_base_dir }}{% raw %}/${tls_sni}/privkey1.pem}{{% endraw %}{{ exim_ssl_base_dir }}{% raw %}/${tls_sni}/privkey1.pem}{{% endraw %}{{ exim_tls_privatekey }}{% raw %}}}{% endraw %}
+tls_certificate = {% raw %}${if exists{{% endraw %}{{ exim_ssl_base_dir }}{% raw %}/${tls_sni}/fullchain1.pem}{{% endraw %}{{ exim_ssl_base_dir }}{% raw %}/${tls_sni}/fullchain1.pem}{{% endraw %}{{ exim_tls_certificate }}{% raw %}}}{% endraw %}
+
+```
+Connect to: https://my_server/admin. Press "Publish Config".
+Test
+```
+cat /etc/exim/exim.conf|grep tls
+cat /etc/exim/exim.conf|grep port
+...
+openssl s_client -starttls smtp -crlf -connect 127.0.0.1:587 -servername mx.domain.com -tlsextdebug
+openssl s_client -starttls smtp -crlf -connect 127.0.0.1:587 -servername mx.domain2.com -tlsextdebug
+openssl s_client -starttls smtp -crlf -connect 127.0.0.1:587 -tlsextdebug
+
+```
+## 17. Install Fail2Ban and firewalld
+
+
+
+## 18. Re-arranging name and location of log files (still work in progress :pencil2:)
+The configuration we are trying to achieve is to store all the logs file inside the directory /var/log with the name _package_.log for the ordinary log files, _package_.err with error, critical log files.
+```
+nano /etc/rsyslog.conf
+```
+Comment (with leading #) all the lines in the "RULE SECTION" of the file /etc/rsyslog.conf
+Copy the file
+https://github.com/webappvicio/atmail860onAWS/blob/master/99-atmailserver.conf
+to /etc/rsyslog.d/
+```
+systemctl restart rsyslog
+```
+## 19. Log rotate for all log file (still work in progress :pencil2:)
+
+Copy the file
+https://github.com/webappvicio/atmail860onAWS/blob/master/atmailserver.logrotate
+to /etc/logrotate.d/
+
+
+
+## 20. Install imapsync on EC2
+```
+yum install perl-Class-Load perl-IO-Compress perl-Crypt-OpenSSL-RSA perl-Data-Dumper perl-Dist-CheckConflicts perl-ExtUtils-Embed perl-File-Copy-Recursive perl-File-Tail perl-IO-Socket-INET6 perl-IO-Socket-SSL perl-JSON perl-HTML-Parser perl-libwww-perl perl-Mail-IMAPClient perl-Module-Implementation perl-Module-Runtime perl-Module-ScanDeps perl-Net-SSLeay perl-Package-Stash perl-Package-Stash-XS perl-Parse-RecDescent perl-Readonly perl-Regexp-Common perl-Sys-MemInfo perl-TermReadKey perl-Test-Fatal perl-Test-MockObject perl-Test-Simple perl-Test-Pod perl-Test-Requires perl-Try-Tiny perl-Unicode-String perl-URI cpanminus
+cpanm Authen::NTLM Data::Uniqid IO::Tee JSON::WebToken JSON::WebToken::Crypt::RSA Test::Mock::Guard
+cd /_install
+wget -N https://imapsync.lamiral.info/imapsync
+chmod +x imapsync
+./imapsync
+
+```
+
+
+
+
+
+
+
 
 
 
