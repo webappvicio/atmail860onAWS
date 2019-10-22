@@ -170,7 +170,7 @@ cp -p /var/lib/atmail/mailserver/roles/ss1ip/templates/clamav/freshclam.sysconfi
 ```
 To execute the installation, it's necessary to connect to admin web server.
 
-:large_orange_diamond: Moderm browser don't allow anymore to connec to self-signed certificate HTTPS web sites. For me, it was necessary to launch Google Chrome browser on MacOS with a flag to ignore the certificates. 
+:large_orange_diamond: Modern browser don't allow anymore to connec to self-signed certificate HTTPS web sites. For me, it was necessary to launch Google Chrome browser on MacOS with a flag to ignore the certificates. 
 
 ```
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --ignore-certificate-errors &> /dev/null &
@@ -382,7 +382,10 @@ openssl s_client -starttls smtp -crlf -connect 127.0.0.1:587 -servername mx.doma
 openssl s_client -starttls smtp -crlf -connect 127.0.0.1:587 -tlsextdebug
 
 ```
-## 17. Install Fail2Ban 0.11 with iptblase
+## 17. Install Fail2Ban 0.11 with iptables
+Fail2ban is a daemon to ban hosts that cause multiple authentication errors http://www.fail2ban.org and is a mandatory component of a modern mail server configuration. It's not included in atmail package. 
+:large_orange_diamond: The following procedure updates the version of the atmail procedure: 
+https://help.atmail.com/hc/en-us/articles/201566384-Fail2Ban-Exim-SMTP-Auth
 ```
 cd /_install 
 git clone https://github.com/fail2ban/fail2ban.git
