@@ -124,7 +124,7 @@ yum remove postfix -y
 
 amazon-linux-extras install epel
 yum update -y
-yum install nano wget deltarpm ntp dpkg gcc
+yum install nano wget deltarpm ntp dpkg gcc git
 ```
 
 ## 7. Install AtMail Mailserver
@@ -382,30 +382,52 @@ openssl s_client -starttls smtp -crlf -connect 127.0.0.1:587 -servername mx.doma
 openssl s_client -starttls smtp -crlf -connect 127.0.0.1:587 -tlsextdebug
 
 ```
-## :pencil2: 17. Install Fail2Ban and firewalld
+## 17. Install Fail2Ban 0.11 with iptblase
 ```
-yum install fail2ban
+cd /_install 
+git clone https://github.com/fail2ban/fail2ban.git
+cd fail2ban
+sudo python setup.py install 
+cp build/fail2ban.service /usr/lib/systemd/system/
 systemctl start fail2ban
 systemctl enable fail2ban
-systemctl start fail2ban
-systemctl enable firewalld
-firewall-cmd --zone=public --add-service=smtp --add-service=smtps --add-service=imap --add-service=imaps --add-service=pop3 --add-service=pop3s --add-service=http --add-service=https --add-service=dhcp --permanent
-firewall-cmd --zone=public --add-port=587/tcp --add-port=8443/tcp --add-port=8008/tcp  --permanent
-firewall-cmd --reload
+fail2ban-client version
+```
+Create a new file /etc/fail2ban/jail.local
+```
+[DEFAULT]
+ignoreip = 127.0.0.1/8
+bantime.increment = true
+bantime.rndtime = 30m
+
+# ACTIONS
+destemail = postmaster@my_domain.com
+sender = postmaster@my_domain.com
+mta = sendmail
+protocol = tcp
+chain = INPUT
+port = 0:65535
+
+
+[exim]
+findtime = 1h
+bantime = 5h
+logpath = /var/log/exim.log
+
+action = %(action_mwl)s
+enabled= true
+```
+Reload configuration
+```
+fail2ban-client reload
+fail2ban-client -d
+systemctl restart fail2ban
 ```
 
-```
-nano /etc/firewall/firewall.conf
-```
-Check and, if necessary, change:
-```
-LogDenied=off
-```
 
-Test status of fail2ban-exim
-```
-fail2ban-client status exim
-```
+
+
+
 
 
 
