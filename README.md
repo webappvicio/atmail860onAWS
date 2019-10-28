@@ -405,21 +405,21 @@ bantime.increment = true
 bantime.rndtime = 30m
 
 # ACTIONS
-destemail = postmaster@my_domain.com
-sender = postmaster@my_domain.com
+destemail = postmaster@xyz.it
+sender = postmaster@xyz.it
 mta = sendmail
 protocol = tcp
 chain = INPUT
 port = 0:65535
 
-
-[exim]
 findtime = 1h
 bantime = 5h
-logpath = /var/log/exim.log
-
 action = %(action_mwl)s
+
+[exim]
 enabled= true
+logpath = /var/log/exim.log
+filter = %(known/filter)s[pid="(?: \w+ exim\[\d+\]:)?<known/pid>"]
 ```
 Reload configuration
 ```
@@ -431,22 +431,22 @@ systemctl restart fail2ban
 
 
 
-
-
-
-
-## :pencil2: 18. Re-arranging name and location of log files (still work in progress)
+## 18. Re-arranging name and location of log files
 The configuration we are trying to achieve is to store all the logs file inside the directory /var/log with the name _package_.log for the ordinary log files, _package_.err with error, critical log files.
+
 ```
 nano /etc/rsyslog.conf
 ```
+
 Comment (with leading #) all the lines in the "RULE SECTION" of the file /etc/rsyslog.conf
 Copy the file
 https://github.com/webappvicio/atmail860onAWS/blob/master/99-atmailserver.conf
 to /etc/rsyslog.d/
+
 ```
 systemctl restart rsyslog
 ```
+
 ## :pencil2: 19. Log rotate for all log file (still work in progress)
 
 Copy the file
