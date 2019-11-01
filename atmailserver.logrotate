@@ -9,7 +9,6 @@ sharedscripts
 
 
 /var/log/amazon-ssm-agent.log
-/var/log/atmail-ansible.log
 /var/log/atmail-api.log
 /var/log/clamd.log
 /var/log/cloud-init-output.log
@@ -27,6 +26,7 @@ sharedscripts
 /var/log/secure.log
 /var/log/spamd.log
 /var/log/spooler.log
+/var/log/yum.log
 {
     postrotate
 		/bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
@@ -48,15 +48,13 @@ sharedscripts
 }
 
 /var/log/dovecot.log
-/var/log/dovecot-err.log
+/var/log/dovecot-err.log 
 {
 	postrotate
 		/bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
 		doveadm log reopen
 	endscript
 }
-
-
 
 /var/log/fail2ban.log {
     postrotate
@@ -89,4 +87,5 @@ sharedscripts
        fi
     endscript
 }
+
 
