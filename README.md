@@ -50,7 +50,9 @@ Launch EC2 Instance Amazon Linux 2 AMI (HVM), SSD Volume Type - 64-bit (x86). Th
 
 We reccomend to select *t3.medium* instance to comply with the AtMail minimum requirement of 4GB of memory avialable. It's importante that the RDS and the EC2 instances are in the same region/zone.
 
-:dollar: t3.medium EC2 as reserved instance (no-upfront) as a cost of 25$ per month (300$ per year, 0.85% per year per user on the 357 users license).
+:dollar: t3.medium EC2 as reserved instance (no-upfront) as a cost of 25$ per month (300$ per year, 0.85$ per year per user on the 357 users license).
+
+:dollar: I also tried to run the server on a t3.small EC2 with only 2GB of RAM (182$ per year, 0.50$ per year per user on the 357 users license). Unofrtunatly, clamd has a poor memory management and so with only 2GB RAM, it's necessary to activate the swap disk. 
 
 It's preferred to have 1 root volume with the operating system and the software (8GB-16GB), and 1 extra EBS volume to hold the imap data.
 
@@ -126,6 +128,21 @@ amazon-linux-extras install epel
 yum update -y
 yum install nano wget deltarpm ntp dpkg gcc git
 ```
+If the server has only 2GB of RAM, it's necessary to activate a swap disk of 4GB:
+
+```
+sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+swapon -s
+nano /etc/fstab
+```
+add the following to mount the sap disk at reboot
+```
+/swapfile swap swap defaults 0 0
+```
+
 
 ## 7. Install AtMail Mailserver
 
