@@ -26,6 +26,7 @@ sharedscripts
 /var/log/secure.log
 /var/log/spamd.log
 /var/log/spooler.log
+/var/log/systemd-session-slice.log
 /var/log/yum.log
 {
     postrotate
@@ -48,7 +49,7 @@ sharedscripts
 }
 
 /var/log/dovecot.log
-/var/log/dovecot-err.log 
+/var/log/dovecot-err.log
 {
 	postrotate
 		/bin/kill -HUP `cat /var/run/syslogd.pid 2> /dev/null` 2> /dev/null || true
@@ -87,5 +88,4 @@ sharedscripts
        fi
     endscript
 }
-
 
