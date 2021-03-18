@@ -469,6 +469,7 @@ systemctl restart rsyslog
 Copy the file
 https://github.com/webappvicio/atmail860onAWS/blob/master/atmailserver.logrotate
 to /etc/logrotate.d/
+You can run logrotate with the command: logrotate --force  /etc/logrotate.d/
 
 ## :pencil2: 18. Configure CloudWatch Agent to send metrics and logs from the server to CloudWatch
 ```
